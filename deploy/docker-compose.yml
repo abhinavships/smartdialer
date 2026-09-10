@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: smartdialer_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgrespassword
+      POSTGRES_DB: smartdialer
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d smartdialer"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+  api:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    container_name: smartdialer_api
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      PORT: 8000
+      DATABASE_URL: postgresql+asyncpg://postgres:postgrespassword@postgres:5432/smartdialer
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: uvicorn smartdialer.main:app --host 0.0.0.0 --port 8000
+
+  worker:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    container_name: smartdialer_worker
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql+asyncpg://postgres:postgrespassword@postgres:5432/smartdialer
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: python -m smartdialer.worker
+
+volumes:
+  postgres_data:
+    name: smartdialer_postgres_data
