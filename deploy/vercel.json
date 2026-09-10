@@ -1,0 +1,16 @@
+{
+  "version": 2,
+  "name": "smartdialer-dashboard",
+  "builds": [
+    {
+      "src": "deploy/frontend/index.html",
+      "use": "@vercel/static"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "deploy/frontend/index.html"
+    }
+  ]
+}
