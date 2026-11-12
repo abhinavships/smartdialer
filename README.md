@@ -1,6 +1,10 @@
 # SmartDialer 📞⚡
 
-A high-throughput, fault-tolerant **Predictive Dialer Prototype** built with **Python 3.11, FastAPI, and PostgreSQL**. 
+A fault-tolerant **predictive dialer** built with **Python 3.11, FastAPI and PostgreSQL**. It decides how many outbound calls to place per available agent, second by second, without ever over-dialing past its safety limits.
+
+![Python](https://img.shields.io/badge/python-3.11-blue) ![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688) ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1) ![Tests](https://img.shields.io/badge/tests-pytest-brightgreen) ![License](https://img.shields.io/badge/license-MIT-lightgrey)
+
+**Why it is worth a look:** the whole coordination layer is one Postgres database. No Redis, no Kafka, no distributed locks. Correctness under crashes, duplicate webhooks and out-of-order events comes from row locks, a partial unique index, monotonic state ranks and leases.
 
 SmartDialer leverages PostgreSQL as its single concurrency primitive and coordination layer—eliminating dependencies on Redis, Kafka, or complex microservice infrastructure.
 
@@ -74,6 +78,21 @@ Components launched:
 For production deployment instructions, view **[deploy/RAILWAY.md](./deploy/RAILWAY.md)**.
 
 > ⚠️ **Note on Vercel**: Vercel serverless functions are request-scoped and terminate after HTTP responses. SmartDialer requires continuous process execution for its 1-second pacing loop and 5-second lease reaper. Use Railway, AWS ECS, or Render for hosting.
+
+---
+
+## 🔌 API surface
+
+| Method | Endpoint | Purpose |
+|---|---|---|
+| GET | `/health` | Liveness |
+| GET | `/metrics` | Live counts: agents, calls, abandon rate |
+| GET | `/decisions` | Audit trail of pacing decisions with full state snapshots |
+| POST | `/agents` | Register an agent |
+| POST | `/borrowers` | Queue a borrower to be called |
+| POST | `/webhooks/provider` | Telephony provider events (idempotent) |
+
+A static monitoring dashboard lives in `deploy/frontend/index.html`, and `sim/simulator.py` replays four load scenarios (20%, 50% and 70% answer rates, plus shifting rates with provider failures).
 
 ---
 
